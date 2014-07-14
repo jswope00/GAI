@@ -27,8 +27,6 @@ class PaymentFakeViewTest(TestCase):
         ('orderPage_version', 2),
         ('orderPage_serialNumber', '1234567890'),
     ])
-    
-    print CLIENT_POST_PARAMS, 'Print Client Sources'
 
     def setUp(self):
         super(PaymentFakeViewTest, self).setUp()

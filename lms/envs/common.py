@@ -730,7 +730,7 @@ ZENDESK_API_KEY = None
 EMBARGO_SITE_REDIRECT_URL = None
 
 ##### shoppingcart Payment #####
-PAYMENT_SUPPORT_EMAIL = 'payment@example.com'
+PAYMENT_SUPPORT_EMAIL = 'john@johnswope.com'
 ##### Using cybersource by default #####
 CC_PROCESSOR = {
     'CyberSource': {
@@ -1308,6 +1308,8 @@ INSTALLED_APPS = (
 
     # Monitoring functionality
     'monitoring',
+
+    'paypal.standard.ipn'
 )
 
 ######################### MARKETING SITE ###############################
@@ -1336,7 +1338,7 @@ VERIFY_STUDENT = {
 }
 
 ### This enables the Metrics tab for the Instructor dashboard ###########
-FEATURES['CLASS_DASHBOARD'] = False
+FEATURES['CLASS_DASHBOARD'] = True
 if FEATURES.get('CLASS_DASHBOARD'):
     INSTALLED_APPS += ('class_dashboard',)
 
@@ -1628,6 +1630,25 @@ OPTIONAL_APPS = (
     'openassessment.workflow',
     'openassessment.xblock'
 )
+
+########### Paypal Payment Integration ################## INSTALLED_APPS += ('paypal.standard.ipn',)
+# Paypal Sandbox URL
+SANDBOX_PAYPAL_ENDPOINT = "https://www.sandbox.paypal.com/cgi- bin/webscr"
+# Paypal Live URL
+LIVE_PAYPAL_ENDPOINT = "https://www.paypal.com/cgi-bin/webscr"
+# Paypal Receiver Mail Address
+# Place paypal Business account mail address 
+PAYPAL_RECEIVER_EMAIL = "username@example.com"
+# Enable Paypal payment Fake URL 
+FEATURES['ENABLE_PAYPAL_PAYMENT_FAKE'] = True
+# Enable Paypal payment 
+URL FEATURES['ENABLE_PAYPAL_PAYMENT'] = True
+# For installations on which you want to use the sandbox,
+# set PAYPAL_TEST to True. Ensure PAYPAL_RECEIVER_EMAIL is set to # your sandbox account email too.
+FEATURES['PAYPAL_TEST'] = True
+# For installations on which you want to use the live, 
+FEATURES['PAYPAL_LIVE'] = False
+###############################################
 
 for app_name in OPTIONAL_APPS:
     # First attempt to only find the module rather than actually importing it,

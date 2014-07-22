@@ -1,0 +1,85 @@
+<html>
+    <head>
+        <title>Your Order History</title>
+    </head>
+    <body>
+        
+<section class="container cart-list">    
+<p> Hello {{ username }},</p>
+
+<p>Thank you for your order from {{ site_name.name }}.
+You can check the status of your order by logging into your account.
+If you have any questions about your order please contact us at {{contact_mail}}.</p>
+
+<p>Your order confirmation is below. Thank you again for your order.</p>
+
+<p>Your Order #{{cart.id}} (placed on ({{ipn_obj.payment_date}})</p>
+
+<!-- Billing Information -->
+<h2>Billing Information:</h2>
+  
+<p>{{ipn_obj.first_name}} {{ipn_obj.last_name}},</p>
+<p>{{ipn_obj.address_street}},</p>
+<p>{{ipn_obj.address_city}}, {{ipn_obj.address_state}},</p>
+<p> {{ipn_obj.address_zip}},</p>
+<p> {{ipn_obj.address_country}}.</p>
+{% if ipn_obj.contact_phone %}
+    <p>T: {{ipn_obj.contact_phone}}</p>
+{% endif %}
+    
+<!-- Payment Method: -->
+<h2>Payment Method:</h2>
+
+<p>PayPal Website Payments Standard</p>
+<p>Payer Email: {{ ipn_obj.payer_email }}</p>
+ 
+</section>
+
+<section class="container cart-list">
+  <h2>Your Ordered Items:</h2>
+  {% if cart_items %}
+    <table class="cart-table" border="1" >
+      <thead>
+        <tr class="cart-headings">
+          <th class="qty">Quantity</th>
+          <th class="dsc">Description</th>
+          <th class="cur">Currency</th>
+          <th class="u-pr">Unit Price</th>
+          <th class="prc">Price</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in cart_items %}
+        <tr class="cart-items">
+          <td>{{item.qty }}</td>
+          <td>{{item.line_desc}}</td>
+           <td>{{item.currency|upper }}</td>
+          <td>{{item.unit_cost}}</td>
+          <td>{{item.line_cost}}</td>
+        </tr>
+        {% endfor %}
+        <tr class="cart-headings">
+          <th colspan="4">Total Amount</th>
+          <td class="cart-total-cost">{{ cart.total_cost }}</td>
+        </tr>
+      </tbody>
+    </table>
+  {% else %}
+    <p>You have selected no items for purchase.</p>
+  {% endif %}
+
+</section>
+
+<!-- Greetings Information-->
+<section class="container cart-list">
+<p>Thank you,</p>
+<p>{{site_name.name}} </p>
+</section>
+</br>
+
+</body>
+</html>
+
+
+
+

@@ -28,18 +28,6 @@ class CourseDoesNotExistException(InvalidCartItem):
     pass
 
 
-class CouponDoesNotExistException(InvalidCartItem):
-    pass
-
-
-class CouponAlreadyExistException(InvalidCartItem):
-    pass
-
-
-class ItemDoesNotExistAgainstCouponException(InvalidCartItem):
-    pass
-
-
 class ReportException(Exception):
     pass
 

@@ -41,12 +41,12 @@ p + h2, ul + h2, ol + h2 {
 
 p {
   color: $base-font-color;
-  font: normal 1em/1.6em $serif;
+  font: normal 1.1em/1.6em $serif;
   margin: 0px;
 }
 
 span {
-  font: normal 1em/1.6em $sans-serif;
+  font: normal 1.1em/1.6em $sans-serif;
   color: $base-font-color;
 }
 
@@ -62,7 +62,7 @@ p + p, ul + p, ol + p {
 p {
   a:link, a:visited {
     color: $link-color;
-    font: normal 1em/1em $serif;
+    font: normal 1.1em/1.1em $serif;
     text-decoration: none;
     @include transition(all 0.1s linear 0s);
 
@@ -75,7 +75,7 @@ p {
 
 a:link, a:visited {
   color: $link-color;
-  font: normal 1em/1em $sans-serif;
+  font: normal 1.1em/1.1em $sans-serif;
   text-decoration: none;
   @include transition(all 0.1s linear 0s);
 

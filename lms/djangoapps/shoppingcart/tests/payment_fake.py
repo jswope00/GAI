@@ -17,7 +17,6 @@ from django.views.decorators.csrf import csrf_exempt
 from django.http import HttpResponse, HttpResponseBadRequest
 from edxmako.shortcuts import render_to_response
 
-
 # We use the same hashing function as the software under test,
 # because it mainly uses standard libraries, and I want
 # to avoid duplicating that code.
@@ -34,6 +33,7 @@ class PaymentFakeView(View):
     # since processes don't share memory.  Since Lettuce
     # runs one Django server process, this works for acceptance testing.
     PAYMENT_STATUS_RESPONSE = "success"
+    print PAYMENT_STATUS_RESPONSE, 'PAYMENT_STATUS_RESPONSE'
 
     @csrf_exempt
     def dispatch(self, *args, **kwargs):
@@ -42,6 +42,7 @@ class PaymentFakeView(View):
         """
         return super(PaymentFakeView, self).dispatch(*args, **kwargs)
 
+    @csrf_exempt
     def post(self, request):
         """
         Render a fake payment page.

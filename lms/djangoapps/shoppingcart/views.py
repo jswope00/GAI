@@ -10,14 +10,22 @@ from django.views.decorators.http import require_POST
 from django.core.urlresolvers import reverse
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.decorators import login_required
+from django.contrib.sites.models import Site
 from edxmako.shortcuts import render_to_response
 from opaque_keys.edx.locations import SlashSeparatedCourseKey
 from shoppingcart.reports import RefundReport, ItemizedPurchaseReport, UniversityRevenueShareReport, CertificateStatusReport
 from student.models import CourseEnrollment
-from .exceptions import ItemAlreadyInCartException, AlreadyEnrolledInCourseException, CourseDoesNotExistException, ReportTypeDoesNotExistException, CouponAlreadyExistException, ItemDoesNotExistAgainstCouponException
-from .models import Order, PaidCourseRegistration, OrderItem, Coupon, CouponRedemption
+from .exceptions import ItemAlreadyInCartException, AlreadyEnrolledInCourseException, CourseDoesNotExistException, ReportTypeDoesNotExistException
+from .models import Order, PaidCourseRegistration, OrderItem
 from .processors import process_postpay_callback, render_purchase_form_html
-import json
+from django.template import RequestContext
+from edxmako.shortcuts import render_to_string
+from collections import OrderedDict, defaultdict
+
+from django.contrib.sites.models import get_current_site
+
+from paypal.standard.ipn.mail import send_payment_cancel_mail
+
 
 log = logging.getLogger("shoppingcart")
 
@@ -30,6 +38,9 @@ REPORT_TYPES = [
     ("certificate_status", CertificateStatusReport),
 ]
 
+# Take a Current Date
+now = datetime.datetime.now()
+
 
 def initialize_report(report_type, start_date, end_date, start_letter=None, end_letter=None):
     """
@@ -39,6 +50,7 @@ def initialize_report(report_type, start_date, end_date, start_letter=None, end_
         if report_type in item:
             return item[1](start_date, end_date, start_letter, end_letter)
     raise ReportTypeDoesNotExistException
+
 
 @require_POST
 def add_course_to_cart(request, course_id):
@@ -65,38 +77,114 @@ def add_course_to_cart(request, course_id):
     return HttpResponse(_("Course added to cart."))
 
 
+################ Payment Paypal IPN Standard Integration ######################
+def get_signed_purchase_params(request, cart):
+    
+    """
+        This functions will return the Parameteres for Paypal IPN Standard Payment Form    
+    """
+    
+    total_cost = cart.total_cost
+    amount = "{0:0.2f}".format(total_cost)
+    cart_items = cart.orderitem_set.all()
+    
+    params = OrderedDict()
+    
+    # Newly Added Fields
+    params['amount'] = amount
+    params['business'] = settings.PAYPAL_RECEIVER_EMAIL
+    params['currency_code'] = cart.currency.upper()
+    params['quantity'] = len(cart_items)
+
+    #params['invoice'] = "{0:d}".format(cart.id)    
+    unique_val = "{0:d}-{1}".format(cart.id, now)
+    params['invoice'] = unique_val 
+
+    # Get Current Site
+    current_site = Site.objects.get_current()
+    
+    params['notify_url']  = "http://{0}".format(current_site.domain)+ reverse('paypal-ipn')
+    #params['notify_url']  = "http://{0}/shoppingcart/payment/paypal/"
+    params['return'] =  "http://{0}/shoppingcart/receipt/{1:d}/".format(current_site.domain, cart.id)
+    params['cancel_return'] = "http://{0}/shoppingcart/payment/cancel/".format(current_site.domain)
+        
+    # URL set for Paypal Payments
+    # To Do Comment
+    #params['notify_url']  = "http://54.183.17.35" + reverse('paypal-ipn')
+    #params['return'] =  "http://54.183.17.35/shoppingcart/receipt/{0:d}/".format(cart.id)
+    #params['cancel_return'] = "http://54.183.17.35/shoppingcart/payment/cancel/"
+    
+    # Billing Address from cart Details
+    params['address_city'] = cart.bill_to_city 
+    params['last_name'] = cart.bill_to_last
+    params['first_name'] = cart.bill_to_first
+    params['address_country'] = cart.bill_to_country
+    params['address_state'] = cart.bill_to_state
+    params['address_street'] = cart.bill_to_street1 
+    params['address_zip'] = cart.bill_to_postalcode
+         
+    # For Payment Button
+    params['cmd'] = "_xclick"
+    params['custom'] = request.user.username
+    
+    return params
+
+
+def render_paypal_form_html(request, cart):
+    """
+    Renders the HTML of the hidden POST form that must be used to initiate a purchase with Paypal IPN Standard
+    """
+    if settings.FEATURES['PAYPAL_TEST']:
+        action_url = settings.SANDBOX_PAYPAL_ENDPOINT
+    else:
+        action_url = settings.LIVE_PAYPAL_ENDPOINT
+        
+    return render_to_string('shoppingcart/payment.html', {
+        'action': action_url,
+        'params': get_signed_purchase_params(request, cart),
+    })
+
+
+@csrf_exempt
+def payment_cancel(request):
+    
+    """
+    Success page after payment completion.
+    Clear the cart items.
+    """
+    # Send Notifictaion Mail to User
+    send_payment_cancel_mail(request)
+    
+    # Update the Cart Status as "Purchased"
+    cart = Order.get_cart_for_user(request.user)
+
+    return render_to_response("shoppingcart/order_cancel.html",
+                              {'cart': cart,
+                              }
+                             )
+
+################ Payment Paypal Integration ######################
+
 @login_required
 def show_cart(request):
     cart = Order.get_cart_for_user(request.user)
     total_cost = cart.total_cost
     cart_items = cart.orderitem_set.all()
-
-    # add the request protocol, domain, and port to the cart object so that any specific
-    # CC_PROCESSOR implementation can construct callback URLs, if necessary
-    cart.context = {
-        'request_domain': '{0}://{1}'.format(
-            'https' if request.is_secure() else 'http',
-            request.get_host()
-        )
-    }
-
-    form_html = render_purchase_form_html(cart)
+    
+    # Commented the older one
+    #form_html = render_purchase_form_html(cart)
+    
+    form_html = render_paypal_form_html(request, cart)
     return render_to_response("shoppingcart/list.html",
                               {'shoppingcart_items': cart_items,
                                'amount': total_cost,
                                'form_html': form_html,
                                })
 
-
 @login_required
 def clear_cart(request):
     cart = Order.get_cart_for_user(request.user)
     cart.clear()
-    coupon_redemption = CouponRedemption.objects.filter(user=request.user, order=cart.id)
-    if coupon_redemption:
-        coupon_redemption.delete()
-        log.info('Coupon redemption entry removed for user {0} for order {1}'.format(request.user, cart.id))
-
     return HttpResponse('Cleared')
 
 
@@ -106,51 +194,13 @@ def remove_item(request):
     try:
         item = OrderItem.objects.get(id=item_id, status='cart')
         if item.user == request.user:
-            order_item_course_id = None
-            if hasattr(item, 'paidcourseregistration'):
-                order_item_course_id = item.paidcourseregistration.course_id
             item.delete()
-            log.info('order item {0} removed for user {1}'.format(item_id, request.user))
-            try:
-                coupon_redemption = CouponRedemption.objects.get(user=request.user, order=item.order_id)
-                if order_item_course_id == coupon_redemption.coupon.course_id:
-                    coupon_redemption.delete()
-                    log.info('Coupon "{0}" redemption entry removed for user "{1}" for order item "{2}"'
-                             .format(coupon_redemption.coupon.code, request.user, item_id))
-            except CouponRedemption.DoesNotExist:
-                log.debug('Coupon redemption does not exist for order item id={0}.'.format(item_id))
     except OrderItem.DoesNotExist:
         log.exception('Cannot remove cart OrderItem id={0}. DoesNotExist or item is already purchased'.format(item_id))
     return HttpResponse('OK')
 
 
-@login_required
-def use_coupon(request):
-    """
-    This method generate discount against valid coupon code and save its entry into coupon redemption table
-    """
-    coupon_code = request.POST["coupon_code"]
-    try:
-        coupon = Coupon.objects.get(code=coupon_code)
-    except Coupon.DoesNotExist:
-        return HttpResponseNotFound(_("Discount does not exist against coupon '{0}'.".format(coupon_code)))
 
-    if coupon.is_active:
-        try:
-            cart = Order.get_cart_for_user(request.user)
-            CouponRedemption.add_coupon_redemption(coupon, cart)
-        except CouponAlreadyExistException:
-            return HttpResponseBadRequest(_("Coupon '{0}' already used.".format(coupon_code)))
-        except ItemDoesNotExistAgainstCouponException:
-            return HttpResponseNotFound(_("Coupon '{0}' is not valid for any course in the shopping cart.".format(coupon_code)))
-
-        response = HttpResponse(json.dumps({'response': 'success'}), content_type="application/json")
-        return response
-    else:
-        return HttpResponseBadRequest(_("Coupon '{0}' is inactive.".format(coupon_code)))
-
-
-@csrf_exempt
 @require_POST
 def postpay_callback(request):
     """
@@ -176,7 +226,6 @@ def show_receipt(request, ordernum):
     Displays a receipt for a particular order.
     404 if order is not yet purchased or request.user != order.user
     """
-
     try:
         order = Order.objects.get(id=ordernum)
     except Order.DoesNotExist:
@@ -286,3 +335,5 @@ def csv_report(request):
 
     else:
         return HttpResponseBadRequest("HTTP Method Not Supported")
+    
+

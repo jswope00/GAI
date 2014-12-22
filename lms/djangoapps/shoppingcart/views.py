@@ -23,7 +23,9 @@ from edxmako.shortcuts import render_to_string
 from collections import OrderedDict, defaultdict
 
 from django.contrib.sites.models import get_current_site
+from django.contrib.auth.models import User
 
+from paypal.standard.ipn.models import PayPalIPN
 from paypal.standard.ipn.mail import send_payment_cancel_mail
 
 
@@ -98,6 +100,7 @@ def get_signed_purchase_params(request, cart):
 
     #params['invoice'] = "{0:d}".format(cart.id)    
     unique_val = "{0:d}-{1}".format(cart.id, now)
+    unique_val = "{0:d}".format(cart.id)
     params['invoice'] = unique_val 
 
     # Get Current Site
@@ -221,18 +224,40 @@ def postpay_callback(request):
                                                               'error_html': result['error_html']})
 
 @login_required
+@csrf_exempt
 def show_receipt(request, ordernum):
     """
     Displays a receipt for a particular order.
     404 if order is not yet purchased or request.user != order.user
     """
+
+    user = User.objects.get(username=request.user.username)
+    cart = Order.get_cart_for_user(user)
+
+    try:
+      ipn_obj = PayPalIPN.objects.get(invoice = ordernum)
+      if ipn_obj.payment_status == "Completed":
+          cart.status = 'purchased'
+          cart.save()
+    except PayPalIPN.DoesNotExist:      
+      raise Http404('Notification not found!')
+
+    cart_items = cart.orderitem_set.all()
+
+    try:
+        # Call the Registered Function for the Paid Course
+        for cart_item in cart_items:
+            PaidCourseRegistration.objects.get(id = cart_item.id).purchased_callback()
+    except Exception as e:
+        print str(e), 'REEEEEEEEEEEGGGGGGGGGGGGGTTTTTTTTTTTEEEEEEEEEEEDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD'
+
     try:
         order = Order.objects.get(id=ordernum)
     except Order.DoesNotExist:
         raise Http404('Order not found!')
 
-    if order.user != request.user or order.status != 'purchased':
-        raise Http404('Order not found!')
+    #if order.user != request.user or order.status != 'purchased':
+    #    raise Http404('Order not found!')
 
     order_items = OrderItem.objects.filter(order=order).select_subclasses()
     any_refunds = any(i.status == "refunded" for i in order_items)

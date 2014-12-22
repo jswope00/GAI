@@ -28,7 +28,7 @@ except:
 
 
 def send_payment_success_mail(request, *args, **kwargs):
-    
+     
     """
         Send Notification Mail to User after payment completed.
     """
@@ -56,17 +56,6 @@ def send_payment_success_mail(request, *args, **kwargs):
         "contact_mail": settings.CONTACT_EMAIL
     })
 
-    subject, from_email, to = subject, settings.DEFAULT_FROM_EMAIL, user.email
-
-    text_content = plaintext.render(data)
-
-    try:
-        msg = EmailMultiAlternatives(subject, text_content, from_email, [to])
-        msg.content_subtype = "html"  # Main content is now text/html
-        msg.send()
-    except Exception as e :
-        print str(e)
-        
     if ipn_obj.payment_status == "Completed":
         # Update the Purchased time and Status as Purchased
         cart.purchase(
@@ -87,6 +76,19 @@ def send_payment_success_mail(request, *args, **kwargs):
         except Exception as e:
             print str(e)
           
+
+
+    subject, from_email, to = subject, settings.DEFAULT_FROM_EMAIL, user.email
+
+    text_content = plaintext.render(data)
+
+    try:
+        msg = EmailMultiAlternatives(subject, text_content, from_email, [to])
+        msg.content_subtype = "html"  # Main content is now text/html
+        msg.send()
+    except Exception as e :
+        print str(e), 'EXCEPTION IN MAIL SENDING ###########################################'
+        
     
 def send_payment_cancel_mail(request, *args, **kwargs):
     

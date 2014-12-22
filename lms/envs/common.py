@@ -83,8 +83,8 @@ FEATURES = {
     # for consistency in user-experience, keep the value of the following 3 settings
     # in sync with the corresponding ones in cms/envs/common.py
     'ENABLE_DISCUSSION_SERVICE': True,
-    'ENABLE_TEXTBOOK': True,
-    'ENABLE_STUDENT_NOTES': True,  # enables the student notes API and UI.
+    'ENABLE_TEXTBOOK': False,
+    'ENABLE_STUDENT_NOTES': False,  # enables the student notes API and UI.
 
     # discussion home panel, which includes a subscription on/off setting for discussion digest emails.
     # this should remain off in production until digest notifications are online.
@@ -121,7 +121,7 @@ FEATURES = {
     'COURSES_ARE_BROWSABLE': True,
 
     # Enables ability to restrict enrollment in specific courses by the user account login method
-    'RESTRICT_ENROLL_BY_REG_METHOD': False,
+    'RESTRICT_ENROLL_BY_REG_METHOD': True,
 
     # Enables the LMS bulk email feature for course staff
     'ENABLE_INSTRUCTOR_EMAIL': True,
@@ -1362,13 +1362,13 @@ if FEATURES.get('AUTH_USE_CAS'):
 
 REGISTRATION_EXTRA_FIELDS = {
     'level_of_education': 'hidden',
-    'gender': 'optional',
-    'year_of_birth': 'optional',
+    'gender': 'hidden',
+    'year_of_birth': 'hidden',
     'mailing_address': 'hidden',
     'goals': 'hidden',
     'honor_code': 'hidden',
-    'city': 'optional',
-    'country': 'optional',
+    'city': 'hidden',
+    'country': 'hidden',
 }
 
 ########################## CERTIFICATE NAME ########################

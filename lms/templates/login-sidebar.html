@@ -17,7 +17,10 @@ from django.core.urlresolvers import reverse
 
 <div class="cta cta-help">
   <h3>${_("Not Enrolled?")}</h3>
-  <p><a href="${reverse('register_user')}">${_("Sign up for {platform_name} today!").format(platform_name=platform_name)}</a></p>
+  <!--comment out Registration page..
+	<p><a href="${reverse('register_user')}">${_("Sign up for {platform_name} today!").format(platform_name=platform_name)}</a></p>
+	..End Comment out Registration page -->
+	<p>You can receive login credentials by e-mailing <a href="mailto:info@kisspatent.com?Subject=Coach.Kisspatent.com%20registration">info@kisspatent.com</a></p>
 
   ## Disable help unless the FAQ marketing link is enabled
   % if settings.MKTG_URL_LINK_MAP.get('FAQ'):

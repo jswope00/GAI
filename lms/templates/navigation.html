@@ -104,6 +104,7 @@ site_status_msg = get_site_status_msg(course_id)
         % endif
       </%block>
       % if not settings.FEATURES['DISABLE_LOGIN_BUTTON']:
+	<!--Comment out registration page..
           % if course and settings.FEATURES.get('RESTRICT_ENROLL_BY_REG_METHOD') and course.enrollment_domain:
           <li class="nav-global-04">
             <a class="cta cta-register" href="${reverse('course-specific-register', args=[course.id.to_deprecated_string()])}">${_("Register Now")}</a>
@@ -113,6 +114,7 @@ site_status_msg = get_site_status_msg(course_id)
             <a class="cta cta-register" href="/register">${_("Register Now")}</a>
           </li>
           % endif
+	..End comment out registration page -->
       % endif
     </ol>
 

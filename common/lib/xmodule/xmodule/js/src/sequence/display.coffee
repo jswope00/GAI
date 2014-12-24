@@ -69,23 +69,56 @@ class @Sequence
         when 'in_progress' then element.addClass('progress-some')
         when 'done' then element.addClass('progress-done')
 
+  set_href = (anchors, link) ->
+    anchors.each (i, e) =>
+      $(e).attr('href', link)
+      true
+
   toggleArrows: =>
     @$('.sequence-nav-buttons a').unbind('click')
 
+    subsections = $('nav[aria-label="Course Navigation"]').find('li > a')
+    active_ss = null
+    subsections.each (i, e) =>
+      if $(e).parent('li').hasClass('active')
+        active_ss = i
+        return false
+
+    prev_link=null
+    next_link=null
+    if active_ss != 0
+      prev_link = $(subsections[active_ss-1]).attr('href')
+    if active_ss != subsections.length-1
+      next_link = $(subsections[active_ss+1]).attr('href');
+    prev = @$('.sequence-nav-buttons .prev a')
+    next = @$('.sequence-nav-buttons .next a')
+
     if @contents.length == 0
-      @$('.sequence-nav-buttons .prev a').addClass('disabled').attr('aria-hidden', 'true')
-      @$('.sequence-nav-buttons .next a').addClass('disabled').attr('aria-hidden', 'true')
+      if prev_link
+        set_href(prev, prev_link)
+      else
+        prev.addClass('disabled').attr('aria-hidden', 'true')
+      if next_link
+        set_href(next, next_link)
+      else
+        next.addClass('disabled').attr('aria-hidden', 'true')
       return
 
     if @position == 1
-      @$('.sequence-nav-buttons .prev a').addClass('disabled').attr('aria-hidden', 'true')
+      if prev_link
+        set_href(prev, prev_link)
+      else
+        prev.addClass('disabled').attr('aria-hidden', 'true')
     else
-      @$('.sequence-nav-buttons .prev a').removeClass('disabled').attr('aria-hidden', 'false').click(@previous)
+      prev.removeClass('disabled').attr('aria-hidden', 'false').click(@previous)
 
     if @position == @contents.length
-      @$('.sequence-nav-buttons .next a').addClass('disabled').attr('aria-hidden', 'true')
+      if next_link
+        set_href(next, next_link)
+      else
+        next.addClass('disabled').attr('aria-hidden', 'true')
     else
-      @$('.sequence-nav-buttons .next a').removeClass('disabled').attr('aria-hidden', 'false').click(@next)
+      next.removeClass('disabled').attr('aria-hidden', 'false').click(@next)
 
   render: (new_position) ->
     if @position != new_position
